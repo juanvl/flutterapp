@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutterapp/homepage.dart';
+import 'package:flutterapp/screens/home_page.dart';
 
 void main() {
-  runApp(MinhaApp());
+  runApp(MyApp());
 }
 
-class MinhaApp extends StatelessWidget {
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Github Users',
+      home: HomePage(),
       theme: ThemeData(
         primarySwatch: Colors.deepPurple,
       ),
-      home: HomePage(),
       debugShowCheckedModeBanner: false,
     );
   }

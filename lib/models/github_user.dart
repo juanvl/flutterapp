@@ -1,18 +1,20 @@
-class Item {
+class GithubUser {
   String name;
   String login;
   String avatar_url;
   String bio;
   String html_url;
 
-  Item({this.name, this.login, this.avatar_url, this.bio, this.html_url});
+  GithubUser({this.name, this.login, this.avatar_url, this.bio, this.html_url});
 
-  Item.fromJson(Map<String, dynamic> json) {
-    name = json['name'];
-    login = json['login'];
-    avatar_url = json['avatar_url'];
-    bio = json['bio'];
-    html_url = json['html_url'];
+  factory GithubUser.fromJson(Map<String, dynamic> json) {
+    return GithubUser(
+      name: json['name'],
+      login: json['login'],
+      avatar_url: json['avatar_url'],
+      bio: json['bio'],
+      html_url: json['html_url'],
+    );
   }
 
   Map<String, dynamic> toJson() {
