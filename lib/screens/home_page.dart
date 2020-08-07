@@ -16,6 +16,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   var _items = new List<GithubUser>();
   final TextEditingController _usernameInput = TextEditingController();
+  bool _isLoading = true;
+  bool _isLoadingAddUser = false;
 
   @override
   void initState() {
@@ -36,15 +38,29 @@ class _HomePageState extends State<HomePage> {
 
       List<GithubUser> result =
           decoded.map((x) => GithubUser.fromJson(x)).toList();
-      print(result);
 
       setState(() {
         _items = result;
       });
     }
+    _isLoading = false;
   }
 
-  void addUser() async {
+  void _showError(ScaffoldState scaffold, String errorMsg) {
+    scaffold.showSnackBar(
+      SnackBar(
+        content: Text(errorMsg),
+        action: SnackBarAction(
+            label: 'UNDO', onPressed: scaffold.hideCurrentSnackBar),
+      ),
+    );
+  }
+
+  void addUser(scaffold) async {
+    setState(() {
+      _isLoadingAddUser = true;
+    });
+
     final response =
         await http.get('https://api.github.com/users/${_usernameInput.text}');
 
@@ -54,16 +70,33 @@ class _HomePageState extends State<HomePage> {
       );
       setState(() {
         _items.add(githubUser);
+        _isLoadingAddUser = false;
+        _usernameInput.text = '';
+
         save();
       });
     } else {
-      throw Exception('Usuário não encontrado!');
+      setState(() {
+        _isLoadingAddUser = false;
+        _usernameInput.text = '';
+      });
+      _showError(scaffold, 'Usuário não encontrado!');
     }
+  }
+
+  void removeUser(scaffold, index) async {
+    setState(() {
+      _items.removeAt(index);
+
+      save();
+    });
+
+    scaffold
+        .showSnackBar(SnackBar(content: Text("Usuário removido da lista.")));
   }
 
   @override
   Widget build(BuildContext context) {
-    print('builddddd');
     return Scaffold(
       appBar: AppBar(
         title: Text('Github Users'),
@@ -88,7 +121,7 @@ class _HomePageState extends State<HomePage> {
                       decoration: InputDecoration(
                         contentPadding: EdgeInsets.all(8),
                         filled: true,
-                        fillColor: Color(0xFFDDDDDD),
+                        fillColor: Color(0xFFE7E7E7),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide(
@@ -105,31 +138,55 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 ButtonTheme(
-                  minWidth: 20,
-                  height: 40,
-                  padding: EdgeInsets.all(8),
-                  child: FlatButton(
-                    child: Icon(Icons.add),
-                    onPressed: addUser,
-                    color: Colors.deepPurple,
-                    textColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                )
+                    minWidth: 20,
+                    height: 40,
+                    padding: EdgeInsets.all(8),
+                    child: Builder(
+                      builder: (context) => FlatButton(
+                        child: _isLoadingAddUser
+                            ? SizedBox(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                ),
+                                height: 20,
+                                width: 20,
+                              )
+                            : Icon(Icons.add),
+                        onPressed: () {
+                          addUser(Scaffold.of(context));
+                        },
+                        color: Colors.deepPurple,
+                        textColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ))
               ],
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              itemCount: _items.length,
-              itemBuilder: (BuildContext cxt, int index) {
-                final item = _items[index];
-                return UserListItem(item: item);
-              },
-            ),
-          )
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : ListView.builder(
+                    itemCount: _items.length,
+                    itemBuilder: (BuildContext cxt, int index) {
+                      final item = _items[index];
+                      return Dismissible(
+                        key: UniqueKey(),
+                        onDismissed: (direction) {
+                          removeUser(Scaffold.of(cxt), index);
+                        },
+                        background: Container(color: Colors.red),
+                        child: UserListItem(item: item),
+                      );
+                    },
+                  ),
+          ),
         ],
       ),
     );
